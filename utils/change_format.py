@@ -19,6 +19,7 @@ def convert_to_onnx(weights_path, output_path):
         input_names=["image"],
         output_names=["logits"],
         dynamic_axes={"image": {0: "batch_size"}, "logits": {0: "batch_size"}},
+        dynamo=False,  # Use legacy exporter (more stable with Python 3.14)
     )
     print(f"Converted to ONNX: {output_path}")
 
