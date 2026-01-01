@@ -13,6 +13,6 @@ wheels/
 data/
 
 # model weights
-model_weights.pth
+weights/
 
 .DS_Store

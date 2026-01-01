@@ -4,7 +4,7 @@ from common import create_model, load_mnist_images, load_mnist_labels
 
 TRAINING_IMAGES_PATH = "data/train-images.idx3-ubyte"
 TRAINING_LABELS_PATH = "data/train-labels.idx1-ubyte"
-MODEL_SAVE_PATH = "model_weights.pth"
+MODEL_SAVE_PATH = "weights/model_weights.pth"
 
 
 def main():
