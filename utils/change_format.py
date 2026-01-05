@@ -1,16 +1,27 @@
 import argparse
 import torch
-from common import create_model
+from common import create_cnn_model, create_mlp_model
+
+MODEL_CONFIG = {
+    "cnn": {
+        "create": create_cnn_model,
+        "input_shape": (1, 1, 28, 28),  # batch, channels, height, width
+    },
+    "mlp": {
+        "create": create_mlp_model,
+        "input_shape": (1, 28, 28),  # batch, height, width
+    },
+}
 
 
-def convert_to_onnx(weights_path, output_path):
+def convert_to_onnx(weights_path, output_path, model_type):
     """Convert PyTorch weights to ONNX format."""
-    model = create_model()
+    config = MODEL_CONFIG[model_type]
+    model = config["create"]()
     model.load_state_dict(torch.load(weights_path, weights_only=True))
     model.eval()
     
-    # Create dummy input matching expected shape (batch, height, width)
-    dummy_input = torch.randn(1, 28, 28)
+    dummy_input = torch.randn(*config["input_shape"])
     
     torch.onnx.export(
         model,
@@ -62,14 +73,20 @@ def main():
         required=True,
         help="Output format: 'onnx' (language-agnostic, recommended) or 'json' (raw weights)",
     )
+    parser.add_argument(
+        "-m", "--model",
+        type=str,
+        choices=["cnn", "mlp"],
+        default="cnn",
+        help="Model architecture: 'cnn' or 'mlp' (default: cnn)",
+    )
     args = parser.parse_args()
     
     if args.format == "onnx":
-        convert_to_onnx(args.weights_file, args.output)
+        convert_to_onnx(args.weights_file, args.output, args.model)
     elif args.format == "json":
         convert_to_json(args.weights_file, args.output)
 
 
 if __name__ == "__main__":
     main()
-

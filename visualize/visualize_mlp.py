@@ -18,15 +18,15 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from common import create_model
+from common import create_mlp_model
 
-WEIGHTS_PATH = "weights/model_weights.pth"
-OUTPUT_DIR = "visualizations"
+WEIGHTS_PATH = "weights/mlp_weights.pth"
+OUTPUT_DIR = "visualizations/mlp"
 
 
 def load_trained_model(weights_path: str):
     """Load the model with trained weights."""
-    model = create_model()
+    model = create_mlp_model()
     model.load_state_dict(torch.load(weights_path, weights_only=True))
     model.eval()
     return model
