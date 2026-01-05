@@ -36,6 +36,13 @@ def save_model(model, save_path, format):
     print(f"Model saved to {output_path}")
 
 
+def get_device():
+    """Get the best available device (MPS for Apple Silicon, else CPU)."""
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Train an MLP digit recognition neural network")
@@ -71,8 +78,12 @@ def main():
     )
     args = parser.parse_args()
     
-    # Create the neural network
-    model = create_mlp_model()
+    # Select device (MPS for Apple Silicon GPU acceleration)
+    device = get_device()
+    print(f"Using device: {device}")
+    
+    # Create the neural network and move to device
+    model = create_mlp_model().to(device)
     
     # Load weights if specified, otherwise use random initialization
     if args.load_weights:
@@ -81,9 +92,9 @@ def main():
     else:
         print("Using random weight initialization")
     
-    # Load training data
-    images = load_mnist_images(args.training_images)
-    labels = load_mnist_labels(args.training_labels)
+    # Load training data and move to device
+    images = load_mnist_images(args.training_images).to(device)
+    labels = load_mnist_labels(args.training_labels).to(device)
     
     # Loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
@@ -116,6 +127,9 @@ def main():
         
         avg_loss = total_loss / num_batches
         print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.6f}")
+    
+    # Move model back to CPU for saving (required for ONNX export)
+    model = model.to("cpu")
     
     # Save model weights after training
     save_model(model, args.save_path, args.format)
