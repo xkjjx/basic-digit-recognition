@@ -1,15 +1,44 @@
 import argparse
+import json
 import torch
-from common import create_model, load_mnist_images, load_mnist_labels
+import torch.nn as nn
+from common import create_cnn_model, load_mnist_images, load_mnist_labels
 
 TRAINING_IMAGES_PATH = "data/train-images.idx3-ubyte"
 TRAINING_LABELS_PATH = "data/train-labels.idx1-ubyte"
-MODEL_SAVE_PATH = "weights/model_weights.pth"
+MODEL_SAVE_PATH = "weights/cnn_weights"
+
+
+def save_model(model, save_path, format):
+    """Save model in the specified format."""
+    if format == "pth":
+        output_path = f"{save_path}.pth"
+        torch.save(model.state_dict(), output_path)
+    elif format == "onnx":
+        output_path = f"{save_path}.onnx"
+        model.eval()
+        dummy_input = torch.randn(1, 1, 28, 28)  # (batch, channels, height, width)
+        torch.onnx.export(
+            model,
+            dummy_input,
+            output_path,
+            input_names=["image"],
+            output_names=["logits"],
+            dynamic_axes={"image": {0: "batch_size"}, "logits": {0: "batch_size"}},
+        )
+    elif format == "json":
+        output_path = f"{save_path}.json"
+        state_dict = model.state_dict()
+        json_dict = {key: tensor.tolist() for key, tensor in state_dict.items()}
+        with open(output_path, "w") as f:
+            json.dump(json_dict, f)
+    
+    print(f"Model saved to {output_path}")
 
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Train a digit recognition neural network")
+    parser = argparse.ArgumentParser(description="Train a CNN digit recognition neural network")
     parser.add_argument(
         "--load-weights",
         type=str,
@@ -31,12 +60,19 @@ def main():
         "--save-path",
         type=str,
         default=MODEL_SAVE_PATH,
-        help=f"Path to save model weights (default: {MODEL_SAVE_PATH})",
+        help=f"Path to save model weights without extension (default: {MODEL_SAVE_PATH})",
+    )
+    parser.add_argument(
+        "--format",
+        type=str,
+        choices=["pth", "onnx", "json"],
+        default="pth",
+        help="Format to save model weights: pth (PyTorch), onnx, or json (default: pth)",
     )
     args = parser.parse_args()
     
     # Create the neural network
-    model = create_model()
+    model = create_cnn_model()
     
     # Load weights if specified, otherwise use random initialization
     if args.load_weights:
@@ -51,10 +87,10 @@ def main():
     
     # Loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     
     # Training loop with backpropagation
-    epochs = 100
+    epochs = 1
     batch_size = 64
     num_batches = len(images) // batch_size
     
@@ -66,6 +102,9 @@ def main():
             end = start + batch_size
             batch_images = images[start:end]
             batch_labels = labels[start:end]
+            
+            # Reshape for CNN: (batch, 28, 28) -> (batch, 1, 28, 28)
+            batch_images = batch_images.unsqueeze(1)
             
             # Forward pass
             output = model(batch_images)
@@ -82,9 +121,9 @@ def main():
         print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.6f}")
     
     # Save model weights after training
-    torch.save(model.state_dict(), args.save_path)
-    print(f"Model weights saved to {args.save_path}")
+    save_model(model, args.save_path, args.format)
 
 
 if __name__ == "__main__":
     main()
+

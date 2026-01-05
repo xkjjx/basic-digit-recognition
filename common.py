@@ -2,13 +2,33 @@ import struct
 import torch
 import torch.nn as nn
 
-def create_model():
-    """Create the neural network architecture."""
+def create_mlp_model():
+    """Create a simple MLP neural network architecture."""
     return nn.Sequential(
         nn.Flatten(),
         nn.Linear(784, 128),
         nn.ReLU(),
         nn.Linear(128, 128),
+        nn.ReLU(),
+        nn.Linear(128, 10),
+    )
+
+def create_cnn_model():
+    """Create a CNN architecture for MNIST digit recognition."""
+    return nn.Sequential(
+        # First conv block: 1 -> 32 channels
+        nn.Conv2d(1, 32, kernel_size=3, padding=1),
+        nn.ReLU(),
+        nn.MaxPool2d(2, 2),  # 28x28 -> 14x14
+        
+        # Second conv block: 32 -> 64 channels
+        nn.Conv2d(32, 64, kernel_size=3, padding=1),
+        nn.ReLU(),
+        nn.MaxPool2d(2, 2),  # 14x14 -> 7x7
+        
+        # Flatten and fully connected layers
+        nn.Flatten(),
+        nn.Linear(64 * 7 * 7, 128),
         nn.ReLU(),
         nn.Linear(128, 10),
     )
