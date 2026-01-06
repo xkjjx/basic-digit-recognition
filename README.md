@@ -1,10 +1,23 @@
 ## About
 
-### Training
-Adjust paths for data and weights as needed. Run training job (`train.py`) to either start from scratch or build upon previous trainings
+MNIST digit recognition with MLP and CNN models.
 
-### Testing
-`test.py` can be used to test the model
+## Structure
 
-### Weight Format
-By default, weights are outputted in python pickle files. This can be converted to either json or onnx as needed; [random.kjonasj.com/digit-recognition/simple.html](random.kjonasj.com/digit-recognition/simple.html) uses the onnx format
+```
+train/          # Training scripts (train_mlp.py, train_cnn.py)
+visualize/      # Model visualization generators
+utils/          # Format conversion (pth → json/onnx)
+data/           # MNIST dataset
+weights/        # Saved model weights
+visualizations/ # Generated analysis outputs
+common.py       # Shared utilities
+test.py         # Model evaluation
+```
+
+## Usage
+
+**Train:** `python -m train.train_mlp` or `python -m train.train_cnn`  
+**Test:** `python test.py`  
+**Visualize:** `python -m visualize.visualize_cnn`  
+**Convert:** `python -m utils.change_format`
