@@ -37,10 +37,34 @@ def save_model(model, save_path, format):
 
 
 def get_device():
-    """Get the best available device (MPS for Apple Silicon, else CPU)."""
+    """Get the best available device (CUDA > MPS > CPU)."""
+    if torch.cuda.is_available():
+        return torch.device("cuda")
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
+
+
+def create_scheduler(scheduler_type, optimizer, epochs):
+    """Create a learning rate scheduler based on the specified type."""
+    if scheduler_type == "none":
+        return None
+    elif scheduler_type == "step":
+        # Reduce LR by 10x every 30 epochs
+        return torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+    elif scheduler_type == "cosine":
+        # Smoothly decay LR following cosine curve
+        return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+    elif scheduler_type == "exponential":
+        # Multiply LR by 0.95 each epoch
+        return torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+    elif scheduler_type == "onecycle":
+        # 1cycle policy: ramp up then down (good for fast convergence)
+        return torch.optim.lr_scheduler.OneCycleLR(
+            optimizer, max_lr=0.01, epochs=epochs, steps_per_epoch=1
+        )
+    else:
+        raise ValueError(f"Unknown scheduler type: {scheduler_type}")
 
 
 def main():
@@ -76,6 +100,31 @@ def main():
         default="pth",
         help="Format to save model weights: pth (PyTorch), onnx, or json (default: pth)",
     )
+    parser.add_argument(
+        "--lr",
+        type=float,
+        default=0.001,
+        help="Initial learning rate (default: 0.001)",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=100,
+        help="Number of training epochs (default: 100)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=64,
+        help="Training batch size (default: 64)",
+    )
+    parser.add_argument(
+        "--scheduler",
+        type=str,
+        choices=["none", "step", "cosine", "exponential", "onecycle"],
+        default="cosine",
+        help="Learning rate scheduler: none, step, cosine, exponential, onecycle (default: cosine)",
+    )
     args = parser.parse_args()
     
     # Select device (MPS for Apple Silicon GPU acceleration)
@@ -98,13 +147,18 @@ def main():
     
     # Loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
-    
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    # Learning rate scheduler
+    scheduler = create_scheduler(args.scheduler, optimizer, args.epochs)
+    if scheduler:
+        print(f"Using {args.scheduler} learning rate scheduler")
+
     # Training loop with backpropagation
-    epochs = 100
-    batch_size = 64
+    epochs = args.epochs
+    batch_size = args.batch_size
     num_batches = len(images) // batch_size
-    
+
     for epoch in range(epochs):
         total_loss = 0.0
         for i in range(num_batches):
@@ -113,20 +167,25 @@ def main():
             end = start + batch_size
             batch_images = images[start:end]
             batch_labels = labels[start:end]
-            
+
             # Forward pass
             output = model(batch_images)
             loss = loss_fn(output, batch_labels)
-            
+
             # Backward pass (backpropagation)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
+
             total_loss += loss.item()
-        
+
+        # Step the scheduler after each epoch
+        current_lr = optimizer.param_groups[0]['lr']
+        if scheduler:
+            scheduler.step()
+
         avg_loss = total_loss / num_batches
-        print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.6f}")
+        print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.6f}, LR: {current_lr:.6f}")
     
     # Move model back to CPU for saving (required for ONNX export)
     model = model.to("cpu")
