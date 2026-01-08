@@ -20,19 +20,19 @@ train_and_test.py   # Unified train + test script
 
 **Train & Test:**
 ```bash
-python train_and_test.py --model cnn
-python train_and_test.py --model mlp --epochs 50 --lr 0.0005
+uv run train_and_test.py --model cnn
+uv run train_and_test.py --model mlp --epochs 50 --lr 0.0005
 ```
 
 **Train only:**
 ```bash
-python -m train.train_cnn
-python -m train.train_mlp --scheduler step --batch-size 128
+uv run -m train.train_cnn
+uv run -m train.train_mlp --scheduler step --batch-size 128
 ```
 
-**Test:** `python test.py weights/cnn_weights.pth --model-type cnn`
-**Visualize:** `python -m visualize.visualize_cnn`
-**Convert:** `python -m utils.change_format`
+**Test:** `uv run test.py weights/cnn_weights.pth --model-type cnn`
+**Visualize:** `uv run -m visualize.visualize_cnn`
+**Convert:** `uv run -m utils.change_format`
 
 ## Training Options
 
