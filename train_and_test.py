@@ -1,6 +1,12 @@
 import argparse
+import os
+import smtplib
 import subprocess
 import sys
+from email.mime.text import MIMEText
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Default paths
 TRAINING_IMAGES_PATH = "data/train-images.idx3-ubyte"
@@ -13,6 +19,34 @@ DEFAULT_LR = 0.001
 DEFAULT_EPOCHS = 100
 DEFAULT_BATCH_SIZE = 64
 DEFAULT_SCHEDULER = "cosine"
+
+
+def send_email(subject, body):
+    """Send email notification to SMTP_USER using SMTP settings from environment variables."""
+    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+
+    if not smtp_user or not smtp_password:
+        print("Warning: SMTP_USER and SMTP_PASSWORD environment variables not set, skipping email")
+        return False
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = smtp_user
+    msg["To"] = smtp_user
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.sendmail(smtp_user, smtp_user, msg.as_string())
+        print(f"Email notification sent to {smtp_user}")
+        return True
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return False
 
 
 def main():
@@ -116,6 +150,11 @@ Examples:
         action="store_true",
         help="Skip testing after training",
     )
+    parser.add_argument(
+        "--email",
+        action="store_true",
+        help="Send email notification when training completes (requires SMTP_USER, SMTP_PASSWORD)",
+    )
 
     args = parser.parse_args()
 
@@ -179,6 +218,22 @@ Examples:
         sys.exit(test_result.returncode)
 
     print("\n=== Training and testing completed successfully ===")
+
+    # Send email notification if requested
+    if args.email:
+        subject = f"Training Complete: {args.model.upper()} model"
+        body = f"""Training and testing completed successfully.
+
+Model: {args.model.upper()}
+Epochs: {args.epochs}
+Learning Rate: {args.lr}
+Batch Size: {args.batch_size}
+Scheduler: {args.scheduler}
+Weights: {weights_path}
+"""
+        if args.num_rotations > 0:
+            body += f"Data Augmentation: {args.num_rotations} rotations\n"
+        send_email(subject, body)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ dependencies = [
     "matplotlib>=3.10.0",
     "numpy>=2.4.0",
     "onnxscript>=0.5.7",
+    "python-dotenv>=1.0.0",
     "torch>=2.9.1",
     "torchvision>=0.22.1",
 ]

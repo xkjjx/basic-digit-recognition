@@ -18,3 +18,5 @@ weights/
 .DS_Store
 
 visualizations/
+
+.env

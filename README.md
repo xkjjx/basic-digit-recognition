@@ -22,6 +22,7 @@ train_and_test.py   # Unified train + test script
 ```bash
 uv run train_and_test.py --model cnn
 uv run train_and_test.py --model mlp --epochs 50 --lr 0.0005
+uv run train_and_test.py --model cnn --email  # requires SMTP_USER, SMTP_PASSWORD env vars
 ```
 
 **Train only:**
