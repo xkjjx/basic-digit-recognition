@@ -2,7 +2,7 @@ import argparse
 import json
 import torch
 import torch.nn as nn
-from common import create_cnn_model, load_mnist_images, load_mnist_labels
+from common import augment_with_rotations, create_cnn_model, load_mnist_images, load_mnist_labels
 
 TRAINING_IMAGES_PATH = "data/train-images.idx3-ubyte"
 TRAINING_LABELS_PATH = "data/train-labels.idx1-ubyte"
@@ -125,6 +125,12 @@ def main():
         default="cosine",
         help="Learning rate scheduler: none, step, cosine, exponential, onecycle (default: cosine)",
     )
+    parser.add_argument(
+        "--num-rotations",
+        type=int,
+        default=0,
+        help="Number of rotation angles for data augmentation (default: 0, disabled)",
+    )
     args = parser.parse_args()
     
     # Select device (MPS for Apple Silicon GPU acceleration)
@@ -144,7 +150,13 @@ def main():
     # Load training data and move to device
     images = load_mnist_images(args.training_images).to(device)
     labels = load_mnist_labels(args.training_labels).to(device)
-    
+
+    # Apply rotation augmentation if enabled
+    if args.num_rotations > 0:
+        original_size = len(images)
+        images, labels = augment_with_rotations(images, labels, args.num_rotations)
+        print(f"Augmented dataset with {args.num_rotations} rotations: {original_size} -> {len(images)} images")
+
     # Loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
@@ -188,7 +200,7 @@ def main():
             scheduler.step()
         
         avg_loss = total_loss / num_batches
-        print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.6f}, LR: {current_lr:.6f}")
+        print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.8f}, LR: {current_lr:.8f}")
     
     # Move model back to CPU for saving (required for ONNX export)
     model = model.to("cpu")

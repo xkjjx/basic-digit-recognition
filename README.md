@@ -42,5 +42,6 @@ Both training scripts support:
 - `--batch-size` - Batch size (default: 64)
 - `--scheduler` - LR scheduler: none, step, cosine, exponential, onecycle (default: cosine)
 - `--format` - Output format: pth, onnx, json (default: pth)
+- `--num-rotations` - Number of rotation angles for data augmentation (default: 0, disabled)
 
 GPU acceleration via CUDA or MPS (Apple Silicon) is automatic.

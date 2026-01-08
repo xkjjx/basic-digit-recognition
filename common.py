@@ -1,6 +1,7 @@
 import struct
 import torch
 import torch.nn as nn
+import torchvision.transforms.functional as TF
 
 def create_mlp_model():
     """Create a simple MLP neural network architecture."""
@@ -54,3 +55,35 @@ def load_mnist_labels(filepath):
         data = f.read()
         labels = torch.frombuffer(bytearray(data), dtype=torch.uint8).long()
     return labels
+
+
+def augment_with_rotations(images, labels, num_rotations):
+    """Augment dataset by creating rotated copies of images.
+
+    Args:
+        images: Tensor of shape (N, 28, 28)
+        labels: Tensor of shape (N,)
+        num_rotations: Number of rotated versions to create per image (evenly spaced from -180 to +180 degrees)
+
+    Returns:
+        Augmented images and labels tensors
+    """
+    if num_rotations <= 0:
+        return images, labels
+
+    augmented_images = [images]
+    augmented_labels = [labels]
+
+    angles = torch.linspace(-180, 180, num_rotations + 1)[:-1]  # Exclude 180 since it equals -180
+
+    for angle in angles:
+        rotated = TF.rotate(images.unsqueeze(1), angle.item()).squeeze(1)
+        augmented_images.append(rotated)
+        augmented_labels.append(labels.clone())
+
+    all_images = torch.cat(augmented_images, dim=0)
+    all_labels = torch.cat(augmented_labels, dim=0)
+
+    # Shuffle the augmented dataset
+    perm = torch.randperm(len(all_images))
+    return all_images[perm], all_labels[perm]

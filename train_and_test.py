@@ -91,6 +91,12 @@ Examples:
         default=DEFAULT_SCHEDULER,
         help=f"Learning rate scheduler (default: {DEFAULT_SCHEDULER})",
     )
+    parser.add_argument(
+        "--num-rotations",
+        type=int,
+        default=0,
+        help="Number of rotation angles for data augmentation (default: 0, disabled)",
+    )
 
     # Test arguments
     parser.add_argument(
@@ -129,6 +135,8 @@ Examples:
     train_cmd.extend(["--epochs", str(args.epochs)])
     train_cmd.extend(["--batch-size", str(args.batch_size)])
     train_cmd.extend(["--scheduler", args.scheduler])
+    if args.num_rotations > 0:
+        train_cmd.extend(["--num-rotations", str(args.num_rotations)])
 
     # Determine weights path for testing
     if args.save_path:
