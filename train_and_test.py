@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 import smtplib
 import subprocess
 import sys
@@ -91,7 +92,7 @@ Examples:
     parser.add_argument(
         "--save-path",
         type=str,
-        help="Path to save model weights without extension (default: weights/<model>_weights)",
+        help="Path to save model weights without extension (default: auto-generated)",
     )
     parser.add_argument(
         "--format",
@@ -177,21 +178,22 @@ Examples:
     if args.num_rotations > 0:
         train_cmd.extend(["--num-rotations", str(args.num_rotations)])
 
-    # Determine weights path for testing
-    if args.save_path:
-        weights_path = f"{args.save_path}.pth"
-    else:
-        weights_path = f"weights/{args.model}_weights.pth"
-
     # Run training
     print(f"=== Training {args.model.upper()} model ===")
     print(f"Running: {' '.join(train_cmd)}\n")
 
-    train_result = subprocess.run(train_cmd)
+    train_result = subprocess.run(train_cmd, capture_output=True, text=True)
+    print(train_result.stdout)
+    if train_result.stderr:
+        print(train_result.stderr, file=sys.stderr)
 
     if train_result.returncode != 0:
         print(f"\nTraining failed with exit code {train_result.returncode}")
         sys.exit(train_result.returncode)
+
+    # Parse weights path from training output
+    match = re.search(r"Model saved to (.+\.pth)", train_result.stdout)
+    weights_path = match.group(1) if match else f"{args.save_path}.pth"
 
     # Skip test if requested or if format is not pth
     if args.skip_test:

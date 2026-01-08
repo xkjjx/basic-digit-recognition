@@ -2,11 +2,10 @@ import argparse
 import json
 import torch
 import torch.nn as nn
-from common import augment_with_rotations, create_mlp_model, load_mnist_images, load_mnist_labels
+from common import augment_with_rotations, create_mlp_model, generate_model_filename, load_mnist_images, load_mnist_labels
 
 TRAINING_IMAGES_PATH = "data/train-images.idx3-ubyte"
 TRAINING_LABELS_PATH = "data/train-labels.idx1-ubyte"
-MODEL_SAVE_PATH = "weights/mlp_weights"
 
 
 def save_model(model, save_path, format):
@@ -90,8 +89,7 @@ def main():
     parser.add_argument(
         "--save-path",
         type=str,
-        default=MODEL_SAVE_PATH,
-        help=f"Path to save model weights without extension (default: {MODEL_SAVE_PATH})",
+        help="Path to save model weights without extension (default: auto-generated)",
     )
     parser.add_argument(
         "--format",
@@ -201,9 +199,10 @@ def main():
     
     # Move model back to CPU for saving (required for ONNX export)
     model = model.to("cpu")
-    
+
     # Save model weights after training
-    save_model(model, args.save_path, args.format)
+    save_path = args.save_path or generate_model_filename("mlp", args.epochs, args.lr, args.batch_size, args.scheduler, args.num_rotations)
+    save_model(model, save_path, args.format)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import secrets
 import struct
 import torch
 import torch.nn as nn
@@ -55,6 +56,18 @@ def load_mnist_labels(filepath):
         data = f.read()
         labels = torch.frombuffer(bytearray(data), dtype=torch.uint8).long()
     return labels
+
+
+def generate_model_filename(model_type, epochs, lr, batch_size, scheduler, num_rotations):
+    """Generate a descriptive filename with model characteristics and random hash."""
+    sched_abbrev = {"none": "none", "step": "step", "cosine": "cos", "exponential": "exp", "onecycle": "1cyc"}
+    sched = sched_abbrev.get(scheduler, scheduler[:4])
+    hash_suffix = secrets.token_hex(3)
+    name = f"{model_type}_e{epochs}_lr{lr}_bs{batch_size}_{sched}"
+    if num_rotations > 0:
+        name += f"_rot{num_rotations}"
+    name += f"_{hash_suffix}"
+    return f"weights/{name}"
 
 
 def augment_with_rotations(images, labels, num_rotations):
