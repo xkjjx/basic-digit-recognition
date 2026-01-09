@@ -7,7 +7,7 @@ MNIST digit recognition with MLP and CNN models.
 ```
 train/              # Training scripts (train_mlp.py, train_cnn.py)
 visualize/          # Model visualization generators
-utils/              # Format conversion (pth → json/onnx)
+utils/              # Format conversion (pth → json/onnx), HTML demo export
 data/               # MNIST dataset
 weights/            # Saved model weights
 visualizations/     # Generated analysis outputs
@@ -34,6 +34,7 @@ uv run -m train.train_mlp --scheduler step --batch-size 128
 **Test:** `uv run test.py weights/cnn_weights.pth --model-type cnn`
 **Visualize:** `uv run -m visualize.visualize_cnn`
 **Convert:** `uv run -m utils.change_format`
+**Export HTML demo:** `uv run -m utils.export_html weights/model.onnx -o demo.html`
 
 ## Training Options
 
